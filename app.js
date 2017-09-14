@@ -7,9 +7,10 @@ app.set('view engine', 'pug');
 app.use('/static', express.static('public'));
 
 //applyinh middleware to the root storing locals
-app.get('/', [midware.getFriends, midware.getStatus]);
+app.get('/', [midware.getFriends, midware.getStatus, midware.getDms]);
 
 app.get('/', (req, res) => {
+	console.log(res.locals.tweets);
 	res.render('layout');
 });
 
