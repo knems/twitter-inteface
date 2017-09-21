@@ -16,6 +16,7 @@ var twit = new Twit({
 */
 
 let screen_name;
+let getTime = time => ta.ago(time);
 
 module.exports = {
 	getScreenName: (req, res, next) => {
@@ -26,16 +27,17 @@ module.exports = {
 	},
 
 	getFriends: (req, res, next) => {
-		twit.get('friends/list', {count: 5, include_user_entities: false}, (err, data, response) => {
+		twit.get('friends/list', {count: 5}, (err, data, response) => {
 			res.locals.friends = [];
+			console.log(data);
 			data.users.forEach((follower) => {
-				let [profile_img, name, screen_name] = [follower.profile_image_url, follower.name, follower.screen_name];
-				let data = {
+				let [profile_img, name, screen_name, following] = [follower.profile_image_url, follower.name, follower.screen_name, follower.following];
+				res.locals.friends.push({
 					profile_img,
 					name,
-					screen_name
-				}
-				res.locals.friends.push(data);
+					screen_name,
+					following
+				});
 			});
 			next();
 		});
@@ -43,17 +45,23 @@ module.exports = {
 
 	getStatus: (req, res, next) => {
 		twit.get('statuses/user_timeline', {count: 5, include_rts: false, screen_name}, function(err, data, response){
+
+			res.locals.user = {
+				name: data[0].user.name,
+				screen_name: data[0].user.screen_name,
+				profile_img: data[0].user.profile_image_url_https,
+				background: data[0].user.profile_banner_url
+			}
 			res.locals.tweets = [];
-			let getTime = time => ta.ago(time);
+
 			data.forEach((tweet) => {
 				let [text, favorites, retweets, time] = [tweet.text, tweet.favorite_count, tweet.retweet_count, getTime(tweet.created_at)];
-				let data = {
+				res.locals.tweets.push({
 					text,
 					favorites,
 					retweets,
 					time
-				};
-				res.locals.tweets.push(data);
+				});
 			});
 			next();
 		});
@@ -63,13 +71,13 @@ module.exports = {
 		twit.get('direct_messages', {count: 5}, (err, data, response) => {
 			res.locals.dms = [];
 			data.forEach((msg) => {
-				let [body, time, img] = [msg.text, msg.created_at, msg.sender.profile_background_image_url_https];
-				let data = {
+				let [body, time, img, name] = [msg.text, getTime(msg.created_at), msg.sender.profile_image_url_https, msg.sender.name];
+				res.locals.dms.push({
 					body,
 					time,
-					img
-				}
-				res.locals.dms.push(data);
+					img,
+					name
+				});
 			});
 
 			next();
